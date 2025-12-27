@@ -1,0 +1,28 @@
+# Core dependencies
+transformers>=4.50.0
+accelerate>=0.27.0
+torch>=2.0.0
+
+# Image processing
+Pillow>=10.0.0
+
+# Data handling
+datasets>=2.18.0
+
+# Configuration
+pyyaml>=6.0
+
+# Progress bars
+tqdm>=4.66.0
+
+# Numerical computing
+numpy>=1.24.0
+
+# Optional: Flash Attention 2 (for faster training)
+# pip install flash-attn --no-build-isolation
+
+# Optional: Wandb for logging
+# wandb>=0.16.0
+
+# Optional: DeepSpeed for distributed training
+# deepspeed>=0.14.0
