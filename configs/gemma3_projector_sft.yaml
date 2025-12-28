@@ -1,54 +1,342 @@
-### Gemma 3 Projector-Only Training Config for LLaMA-Factory ###
+###############################################################################
+#          Gemma 3 Projector-Only Training Config for LLaMA-Factory           #
+#                         FULL PARAMETERS VERSION                              #
+###############################################################################
 
-### Model ###
-model_name_or_path: /workspace/leo/mllm/models/gemma3-4b-it
-trust_remote_code: true
+#==============================================================================#
+#                              MODEL SETTINGS                                   #
+#==============================================================================#
 
-### Method ###
-stage: sft
-do_train: true
-finetuning_type: full
+### Model Path ###
+model_name_or_path: pretrains/gemma3-4b-it     # Path to pretrained model
+# adapter_name_or_path: null                   # Path to LoRA adapter (comma-separated for multiple)
+# adapter_folder: null                         # Folder containing adapter weights
+# cache_dir: null                              # Where to cache downloaded models
 
-### Freeze settings (PROJECTOR-ONLY TRAINING) ###
-freeze_vision_tower: true              # Freeze vision encoder (SigLIP)
-freeze_language_model: true            # Freeze text model (Gemma3)
-freeze_multi_modal_projector: false    # Train projector
+### Model Config ###
+trust_remote_code: true                        # Trust remote code from HuggingFace
+# model_revision: main                         # Model version (branch/tag/commit)
+# low_cpu_mem_usage: true                      # Memory-efficient model loading
+
+### Tokenizer ###
+# use_fast_tokenizer: true                     # Use fast tokenizer (backed by tokenizers lib)
+# resize_vocab: false                          # Resize tokenizer vocab and embeddings
+# split_special_tokens: false                  # Split special tokens during tokenization
+# add_tokens: null                             # Non-special tokens to add (comma-separated)
+# add_special_tokens: null                     # Special tokens to add (comma-separated)
+
+#==============================================================================#
+#                           TRAINING METHOD                                     #
+#==============================================================================#
+
+### Stage ###
+stage: sft                                     # Training stage: pt, sft, rm, ppo, dpo, kto
+do_train: true                                 # Enable training
+
+### Fine-tuning Type ###
+finetuning_type: full                          # Method: lora, oft, freeze, fullpt
+
+#==============================================================================#
+#                    FREEZE SETTINGS (PROJECTOR-ONLY TRAINING)                 #
+#==============================================================================#
+
+### VLM Freeze Settings ###
+freeze_vision_tower: true                      # Freeze vision encoder (SigLIP)
+freeze_language_model: true                    # Freeze text model (Gemma3)  
+freeze_multi_modal_projector: false            # Train ONLY projector layer
+
+### Partial Freeze Settings (if finetuning_type: freeze) ###
+# freeze_trainable_layers: 2                   # Num layers to train (+ last n, - first n)
+# freeze_trainable_modules: all                # Modules to train (comma-separated)
+# freeze_extra_modules: null                   # Extra modules to train
+
+#==============================================================================#
+#                         LORA SETTINGS (if using LoRA)                        #
+#==============================================================================#
+
+### LoRA Config (only if finetuning_type: lora) ###
+# lora_rank: 8                                 # LoRA rank (intrinsic dimension)
+# lora_alpha: 16                               # LoRA scaling factor (default: rank * 2)
+# lora_dropout: 0.0                            # LoRA dropout rate
+# lora_target: all                             # Target modules (comma-separated or 'all')
+# additional_target: null                      # Extra modules to train with LoRA
+
+### Advanced LoRA ###
+# loraplus_lr_ratio: null                      # LoRA+ learning rate ratio (lr_B / lr_A)
+# loraplus_lr_embedding: 1.0e-6                # LoRA+ LR for embedding layers
+# use_rslora: false                            # Use rank stabilization scaling
+# use_dora: false                              # Use DoRA (weight-decomposed LoRA)
+# pissa_init: false                            # Use PiSSA initialization
+# pissa_iter: 16                               # FSVD iterations for PiSSA (-1 to disable)
+# pissa_convert: false                         # Convert PiSSA to normal LoRA
+# create_new_adapter: false                    # Create new adapter with random weights
+
+#==============================================================================#
+#                              DATASET SETTINGS                                 #
+#==============================================================================#
 
 ### Dataset ###
-dataset_dir: /workspace/leo/mllm/data
-dataset: gemma3_vlm_train
-template: gemma3
-cutoff_len: 2048
-preprocessing_num_workers: 4
-dataloader_num_workers: 4
+dataset_dir: data                              # Path to dataset folder
+dataset: gemma3_vlm_train                      # Dataset name(s) in dataset_info.json
+eval_dataset: gemma3_vlm_val                   # Evaluation dataset name(s)
+# media_dir: null                              # Path to images/videos/audios (defaults to dataset_dir)
 
-### Output ###
-output_dir: /workspace/leo/mllm/outputs/gemma3_projector_lf
-logging_steps: 10
-save_steps: 500
-save_total_limit: 3
-overwrite_output_dir: true
+### Data Processing ###
+template: gemma3                               # Template for prompt construction
+cutoff_len: 2048                               # Max tokenized input length
+# max_samples: null                            # Limit samples (for debugging)
+# train_on_prompt: false                       # Include prompt in loss computation
+# mask_history: false                          # Mask history, train on last turn only
 
-### Training ###
-per_device_train_batch_size: 2
-gradient_accumulation_steps: 8
-learning_rate: 1.0e-4
-num_train_epochs: 3
-lr_scheduler_type: cosine
-warmup_ratio: 0.1
-max_grad_norm: 1.0
+### Preprocessing ###
+preprocessing_num_workers: 4                   # Workers for preprocessing
+# preprocessing_batch_size: 1000               # Batch size for preprocessing
+dataloader_num_workers: 4                      # Workers for dataloader
+# overwrite_cache: false                       # Overwrite cached datasets
+# tokenized_path: null                         # Path to save/load tokenized data
 
-### Mixed Precision ###
-bf16: true
-ddp_timeout: 180000000
+### Multi-dataset Settings ###
+# mix_strategy: concat                         # concat, interleave_under, interleave_over
+# interleave_probs: null                       # Sampling probs per dataset (comma-separated)
+# streaming: false                             # Enable dataset streaming
+# buffer_size: 16384                           # Buffer size for streaming
+
+### Packing ###
+# packing: null                                # Enable sequence packing
+# neat_packing: false                          # Packing without cross-attention
+
+### Other Data Settings ###
+# ignore_pad_token_for_loss: true              # Ignore pad tokens in loss
+# tool_format: null                            # Tool format for function calling
+# default_system: null                         # Override default system message
+# enable_thinking: true                        # Enable thinking mode for reasoning
+
+#==============================================================================#
+#                         IMAGE/VIDEO PROCESSOR SETTINGS                        #
+#==============================================================================#
+
+### Image Processing ###
+# image_max_pixels: 589824                     # Max pixels (768*768)
+# image_min_pixels: 1024                       # Min pixels (32*32)
+# image_do_pan_and_scan: false                 # Pan and scan for Gemma3
+
+### Video Processing ###
+# video_max_pixels: 65536                      # Max pixels (256*256)
+# video_min_pixels: 256                        # Min pixels (16*16)
+# video_fps: 2.0                               # Frames per second to sample
+# video_maxlen: 128                            # Max sampled frames
+# use_audio_in_video: false                    # Include audio in video
+
+### Audio Processing ###
+# audio_sampling_rate: 16000                   # Audio sampling rate
+
+#==============================================================================#
+#                              OUTPUT SETTINGS                                  #
+#==============================================================================#
+
+### Output Directory ###
+output_dir: outputs/gemma3_projector_sft       # Output directory
+overwrite_output_dir: true                     # Overwrite existing output
+
+### Logging ###
+logging_steps: 10                              # Log every N steps
+# logging_first_step: false                    # Log first step
+# logging_strategy: steps                      # steps, epoch, no
+logging_dir: outputs/gemma3_projector_sft/logs # TensorBoard log dir
+
+### Checkpointing ###
+save_steps: 500                                # Save checkpoint every N steps
+save_total_limit: 5                            # Max checkpoints to keep
+# save_strategy: steps                         # steps, epoch, no
+# save_on_each_node: false                     # Save on each node in distributed
+save_safetensors: false                        # Save in safetensors format (false = .bin)
+
+### Reporting ###
+# report_to: tensorboard                        # Logging integrations: none, tensorboard, wandb
+
+#==============================================================================#
+#                           TRAINING HYPERPARAMETERS                            #
+#==============================================================================#
+
+### Batch Size ###
+per_device_train_batch_size: 4                 # Batch size per GPU
+gradient_accumulation_steps: 8                 # Gradient accumulation steps
+# per_device_eval_batch_size: 8                # Eval batch size per GPU
+
+### Learning Rate ###
+learning_rate: 1.0e-4                          # Initial learning rate
+# weight_decay: 0.0                            # Weight decay (L2 regularization)
+# adam_beta1: 0.9                              # Adam beta1
+# adam_beta2: 0.999                            # Adam beta2
+# adam_epsilon: 1.0e-8                         # Adam epsilon
+
+### Scheduler ###
+lr_scheduler_type: cosine                      # constant, linear, cosine, polynomial, etc.
+warmup_ratio: 0.1                              # Warmup ratio of total steps
+# warmup_steps: 0                              # Warmup steps (overrides ratio)
+# lr_scheduler_kwargs: null                    # Extra scheduler args
+
+### Training Duration ###
+num_train_epochs: 100                          # Number of epochs
+# max_steps: -1                                # Max steps (-1 = use epochs)
+
+### Gradient Settings ###
+max_grad_norm: 1.0                             # Max gradient norm for clipping
+# gradient_checkpointing: false                # Enable gradient checkpointing
+# disable_gradient_checkpointing: false        # Disable gradient checkpointing
+# use_reentrant_gc: true                       # Use reentrant gradient checkpointing
+
+#==============================================================================#
+#                           MIXED PRECISION SETTINGS                            #
+#==============================================================================#
+
+### Precision ###
+bf16: true                                     # Use bfloat16 mixed precision
+# fp16: false                                  # Use float16 mixed precision
+# pure_bf16: false                             # Pure bf16 training (no AMP)
+# tf32: null                                   # Use TF32 (for Ampere+ GPUs)
+
+### FP8 Training (for Hopper GPUs) ###
+# fp8: false                                   # Enable FP8 training
+# fp8_backend: auto                            # FP8 backend: auto, torchao, te, msamp
+
+#==============================================================================#
+#                           QUANTIZATION SETTINGS                               #
+#==============================================================================#
+
+### On-the-fly Quantization ###
+# quantization_bit: null                       # 4 or 8 bit quantization
+# quantization_method: bitsandbytes            # bnb, gptq, awq, aqlm, hqq, eetq
+# quantization_type: nf4                       # fp4 or nf4 (for 4-bit)
+# double_quantization: true                    # Double quantization
+# quantization_device_map: null                # Device map for quantization
+
+#==============================================================================#
+#                          DISTRIBUTED TRAINING                                 #
+#==============================================================================#
+
+### DDP/FSDP ###
+ddp_timeout: 180000000                         # DDP timeout in seconds
+# ddp_find_unused_parameters: false            # Find unused params in DDP
+# fsdp: ""                                     # FSDP config string
+# fsdp_config: null                            # Path to FSDP config file
+# deepspeed: null                              # Path to DeepSpeed config
+
+### Multi-node ###
+# local_rank: -1                               # Local rank for distributed
+# data_shared_file_system: false               # Use shared file system
+
+#==============================================================================#
+#                             EVALUATION SETTINGS                               #
+#==============================================================================#
 
 ### Evaluation ###
-# val_size: 0.1
-# per_device_eval_batch_size: 2
-# eval_strategy: steps
-# eval_steps: 500
+# val_size: 0.0                                # Validation split (0-1 or int)
+per_device_eval_batch_size: 4                  # Eval batch size
+eval_strategy: steps                           # no, steps, epoch
+eval_steps: 100                                # Eval every N steps
+# eval_num_beams: null                         # Beams for generation eval
+# eval_on_each_dataset: false                  # Eval each dataset separately
 
-### Other ###
-seed: 42
-report_to: none
-save_safetensors: false
+### Metrics ###
+# compute_accuracy: false                      # Compute token-level accuracy
+# predict_with_generate: false                 # Use generation for prediction
+# include_effective_tokens_per_second: false   # Log effective tokens/sec
+
+#==============================================================================#
+#                          ATTENTION & OPTIMIZATION                             #
+#==============================================================================#
+
+### Attention ###
+# flash_attn: auto                             # FlashAttention: auto, disabled, fa2, sdpa
+# shift_attn: false                            # Shift short attention (S^2-Attn)
+
+### Optimizations ###
+# use_unsloth: false                           # Unsloth optimization for LoRA
+# use_unsloth_gc: false                        # Unsloth gradient checkpointing
+# enable_liger_kernel: false                   # Liger kernel optimization
+# upcast_layernorm: false                      # Upcast layernorm to fp32
+# upcast_lmhead_output: false                  # Upcast lm_head output to fp32
+
+#==============================================================================#
+#                         ADVANCED OPTIMIZERS                                   #
+#==============================================================================#
+
+### GaLore (Gradient Low-Rank Projection) ###
+# use_galore: false                            # Enable GaLore
+# galore_target: all                           # Target modules
+# galore_rank: 16                              # GaLore gradient rank
+# galore_update_interval: 200                  # Projection update interval
+# galore_scale: 2.0                            # Scaling coefficient
+# galore_proj_type: std                        # std, reverse_std, right, left, full
+# galore_layerwise: false                      # Layer-wise update
+
+### APOLLO ###
+# use_apollo: false                            # Enable APOLLO optimizer
+# apollo_target: all                           # Target modules
+# apollo_rank: 16                              # APOLLO rank
+# apollo_update_interval: 200                  # Update interval
+# apollo_scale: 32.0                           # Scaling coefficient
+# apollo_proj: random                          # svd or random
+# apollo_proj_type: std                        # std, right, left
+# apollo_scale_type: channel                   # channel or tensor
+# apollo_layerwise: false                      # Layer-wise update
+
+### BAdam ###
+# use_badam: false                             # Enable BAdam optimizer
+# badam_mode: layer                            # layer or ratio
+# badam_start_block: null                      # Starting block index
+# badam_switch_mode: ascending                 # ascending, descending, random, fixed
+# badam_switch_interval: 50                    # Block switch interval
+# badam_update_ratio: 0.05                     # Update ratio (ratio mode)
+# badam_mask_mode: adjacent                    # adjacent or scatter
+# badam_verbose: 0                             # Verbosity level (0, 1, 2)
+
+### Other Optimizers ###
+# use_adam_mini: false                         # Adam-mini optimizer
+# use_muon: false                              # Muon optimizer
+# use_llama_pro: false                         # LLaMA-Pro (expanded blocks only)
+
+#==============================================================================#
+#                          SPECIAL TRAINING OPTIONS                             #
+#==============================================================================#
+
+### Loss & Training ###
+# use_dft_loss: false                          # Use DFT loss
+# disable_shuffling: false                     # Disable training set shuffling
+# plot_loss: false                             # Save training loss curves
+# early_stopping_steps: null                   # Steps for early stopping
+
+### Resume & Load ###
+# resume_from_checkpoint: null                 # Path to checkpoint to resume
+
+#==============================================================================#
+#                            EXPERIMENT TRACKING                                #
+#==============================================================================#
+
+### SwanLab ###
+# use_swanlab: false                           # Enable SwanLab tracking
+# swanlab_project: llamafactory                # Project name
+# swanlab_workspace: null                      # Workspace name
+# swanlab_run_name: null                       # Run name
+# swanlab_mode: cloud                          # cloud or local
+# swanlab_api_key: null                        # API key
+# swanlab_logdir: null                         # Log directory
+
+### WandB (via report_to) ###
+# run_name: null                               # WandB run name
+
+#==============================================================================#
+#                             OTHER SETTINGS                                    #
+#==============================================================================#
+
+### Reproducibility ###
+seed: 42                                       # Random seed
+
+### Debugging ###
+# print_param_status: false                    # Print parameter status
+# max_samples: null                            # Limit samples for debugging
+
+### Hardware ###
+# offload_folder: offload                      # Path to offload weights
+# use_kv_cache: true                           # Use KV cache in generation

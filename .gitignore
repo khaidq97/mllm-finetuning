@@ -4,3 +4,5 @@
 **/__pycache__/**
 pretrains
 data
+llamaboard_cache
+outputs
