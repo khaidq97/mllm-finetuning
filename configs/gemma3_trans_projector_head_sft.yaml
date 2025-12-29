@@ -8,7 +8,7 @@
 #==============================================================================#
 
 ### Model Path ###
-model_name_or_path: pretrains/gemma3-4b-it     # Path to pretrained model
+model_name_or_path: pretrains/gemma3-4b-it       # Path to pretrained model
 # adapter_name_or_path: null                   # Path to LoRA adapter (comma-separated for multiple)
 # adapter_folder: null                         # Folder containing adapter weights
 # cache_dir: null                              # Where to cache downloaded models
@@ -34,7 +34,7 @@ stage: sft                                     # Training stage: pt, sft, rm, pp
 do_train: true                                 # Enable training
 
 ### Fine-tuning Type ###
-finetuning_type: full                          # Method: lora, oft, freeze, fullpt
+finetuning_type: freeze                        # Method: lora, oft, freeze, full
 
 #==============================================================================#
 #                    FREEZE SETTINGS (PROJECTOR-ONLY TRAINING)                 #
@@ -42,13 +42,13 @@ finetuning_type: full                          # Method: lora, oft, freeze, full
 
 ### VLM Freeze Settings ###
 freeze_vision_tower: true                      # Freeze vision encoder (SigLIP)
-freeze_language_model: true                    # Freeze text model (Gemma3)  
-freeze_multi_modal_projector: false            # Train ONLY projector layer
+freeze_language_model: false                   # Partially train language model (last 2 layers)
+freeze_multi_modal_projector: false            # Train projector layer
 
 ### Partial Freeze Settings (if finetuning_type: freeze) ###
-# freeze_trainable_layers: 2                   # Num layers to train (+ last n, - first n)
-# freeze_trainable_modules: all                # Modules to train (comma-separated)
-# freeze_extra_modules: null                   # Extra modules to train
+freeze_trainable_layers: 2                     # Num layers to train (+ last n, - first n)
+freeze_trainable_modules: all                  # Modules to train (comma-separated)
+freeze_extra_modules: multi_modal_projector,post_layernorm  # Extra modules to train
 
 #==============================================================================#
 #                         LORA SETTINGS (if using LoRA)                        #
@@ -83,15 +83,15 @@ eval_dataset: gemma3_vlm_val                   # Evaluation dataset name(s)
 
 ### Data Processing ###
 template: gemma3                               # Template for prompt construction
-cutoff_len: 2048                               # Max tokenized input length
+cutoff_len: 2048                                # Max tokenized input length
 # max_samples: null                            # Limit samples (for debugging)
 # train_on_prompt: false                       # Include prompt in loss computation
 # mask_history: false                          # Mask history, train on last turn only
 
 ### Preprocessing ###
-preprocessing_num_workers: 4                   # Workers for preprocessing
+preprocessing_num_workers: 8                   # Workers for preprocessing
 # preprocessing_batch_size: 1000               # Batch size for preprocessing
-dataloader_num_workers: 4                      # Workers for dataloader
+dataloader_num_workers: 8                      # Workers for dataloader
 # overwrite_cache: false                       # Overwrite cached datasets
 # tokenized_path: null                         # Path to save/load tokenized data
 
@@ -135,17 +135,17 @@ dataloader_num_workers: 4                      # Workers for dataloader
 #==============================================================================#
 
 ### Output Directory ###
-output_dir: outputs/gemma3_projector_sft       # Output directory
+output_dir: outputs/gemma3_trans_projector_head_sft    # Output directory
 overwrite_output_dir: true                     # Overwrite existing output
 
 ### Logging ###
-logging_steps: 10                              # Log every N steps
+logging_steps: 300                             # Log every N steps
 # logging_first_step: false                    # Log first step
 # logging_strategy: steps                      # steps, epoch, no
-logging_dir: outputs/gemma3_projector_sft/logs # TensorBoard log dir
+logging_dir: outputs/gemma3_trans_projector_head_sft/logs # TensorBoard log dir
 
 ### Checkpointing ###
-save_steps: 400                               # Save checkpoint every N steps
+save_steps: 5000                               # Save checkpoint every N steps
 save_total_limit: 5                            # Max checkpoints to keep
 # save_strategy: steps                         # steps, epoch, no
 # save_on_each_node: false                     # Save on each node in distributed
@@ -159,25 +159,25 @@ save_safetensors: false                        # Save in safetensors format (fal
 #==============================================================================#
 
 ### Batch Size ###
-per_device_train_batch_size: 4                 # Batch size per GPU
-gradient_accumulation_steps: 8                 # Gradient accumulation steps
+per_device_train_batch_size: 2                 # Batch size per GPU
+gradient_accumulation_steps: 2                 # Gradient accumulation steps
 # per_device_eval_batch_size: 8                # Eval batch size per GPU
 
 ### Learning Rate ###
-learning_rate: 1.0e-4                          # Initial learning rate
-# weight_decay: 0.0                            # Weight decay (L2 regularization)
+learning_rate: 2.0e-5                          # Initial learning rate
+weight_decay: 0.01                             # Weight decay (L2 regularization)
 # adam_beta1: 0.9                              # Adam beta1
 # adam_beta2: 0.999                            # Adam beta2
 # adam_epsilon: 1.0e-8                         # Adam epsilon
 
 ### Scheduler ###
 lr_scheduler_type: cosine                      # constant, linear, cosine, polynomial, etc.
-warmup_ratio: 0.1                              # Warmup ratio of total steps
+warmup_ratio: 0.05                             # Warmup ratio of total steps
 # warmup_steps: 0                              # Warmup steps (overrides ratio)
 # lr_scheduler_kwargs: null                    # Extra scheduler args
 
 ### Training Duration ###
-num_train_epochs: 100                          # Number of epochs
+num_train_epochs: 500                            # Number of epochs
 # max_steps: -1                                # Max steps (-1 = use epochs)
 
 ### Gradient Settings ###
@@ -232,9 +232,9 @@ ddp_timeout: 180000000                         # DDP timeout in seconds
 
 ### Evaluation ###
 # val_size: 0.0                                # Validation split (0-1 or int)
-per_device_eval_batch_size: 4                  # Eval batch size
+per_device_eval_batch_size: 2                  # Eval batch size
 eval_strategy: steps                           # no, steps, epoch
-eval_steps: 100                                # Eval every N steps
+eval_steps: 1000                                # Eval every N steps
 # eval_num_beams: null                         # Beams for generation eval
 # eval_on_each_dataset: false                  # Eval each dataset separately
 

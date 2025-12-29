@@ -6,3 +6,4 @@ pretrains
 data
 llamaboard_cache
 outputs
+**/.ipynb_checkpoints/**
