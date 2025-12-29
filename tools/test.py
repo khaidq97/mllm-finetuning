@@ -1,12 +1,13 @@
 # pip install accelerate
-
+import time
 from transformers import AutoProcessor, Gemma3ForConditionalGeneration
 from PIL import Image
 import requests
 import torch
 
 # CHECKPOINT_PATH = "/home/sagemaker-user/workspace/mllm-finetuning/outputs/gemma3_projector_sft/checkpoint-800"
-CHECKPOINT_PATH = "/home/sagemaker-user/workspace/mllm-finetuning/pretrains/gemma3-4b-it"
+# CHECKPOINT_PATH = "/home/sagemaker-user/workspace/mllm-finetuning/pretrains/gemma3-4b-it"
+CHECKPOINT_PATH = "/home/sagemaker-user/workspace/mllm-finetuning/outputs/gemma3_trans_projector_head_sft/checkpoint-10000"
 IMAGE_PATH = "/home/sagemaker-user/workspace/mllm-finetuning/data/images/naruto_val_000022.png"
 PROMPT = "Describe this image in detail."
 
@@ -35,6 +36,7 @@ messages = [
     }
 ]
 
+start_time = time.time()
 inputs = processor.apply_chat_template(
     messages, add_generation_prompt=True, tokenize=True,
     return_dict=True, return_tensors="pt"
@@ -48,7 +50,8 @@ with torch.inference_mode():
 
 decoded = processor.decode(generation, skip_special_tokens=True)
 print(decoded)
-
+end_time = time.time()
+print(f"Time taken: {end_time - start_time} seconds")
 # **Overall Impression:** The image is a close-up shot of a vibrant garden scene, 
 # focusing on a cluster of pink cosmos flowers and a busy bumblebee. 
 # It has a slightly soft, natural feel, likely captured in daylight.
